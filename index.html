@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login | Painel Manicure</title>
+    <title>Painel Manicure</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -32,38 +32,57 @@
             const [isLoggedIn, setIsLoggedIn] = useState(false);
             const [password, setPassword] = useState('');
             const [form, setForm] = useState({ nome: '', data: '', valor: '', servico: '' });
+            const [historico, setHistorico] = useState([]);
+            const [view, setView] = useState('novo'); // 'novo' ou 'historico'
 
             if (!isLoggedIn) {
-                return h("div", { className: "min-h-screen flex items-center justify-center p-4 sm:p-8" },
-                    h("div", { className: "bg-white p-6 sm:p-12 rounded-[2rem] sm:rounded-[2.5rem] shadow-xl w-full max-w-sm text-center" },
+                return h("div", { className: "min-h-screen flex items-center justify-center p-4" },
+                    h("div", { className: "bg-white p-8 rounded-[2rem] shadow-xl w-full max-w-sm text-center" },
                         h("img", { src: "logo.png", alt: "Logo", className: "mx-auto h-20 mb-4" }),
-                        h("h1", { className: "text-xl sm:text-2xl font-black mb-6 sm:mb-8" }, "Painel ", h("span", { className: "gold-text" }, "Manicure")),
-                        h("input", { type: "password", placeholder: "Senha (1234)", onChange: (e) => setPassword(e.target.value), className: "w-full bg-zinc-50 p-3 sm:p-4 rounded-xl sm:rounded-2xl mb-4 border border-zinc-200 text-center tracking-widest" }),
-                        h("button", { onClick: () => password === '1234' ? setIsLoggedIn(true) : alert('Senha incorreta!'), className: "w-full gold-bg text-white p-3 sm:p-4 rounded-xl sm:rounded-2xl font-black" }, "Entrar")
+                        h("h1", { className: "text-2xl font-black mb-6" }, "Painel ", h("span", { className: "gold-text" }, "Manicure")),
+                        h("input", { type: "password", placeholder: "Senha", onChange: (e) => setPassword(e.target.value), className: "w-full bg-zinc-50 p-4 rounded-xl mb-4 border border-zinc-200 text-center" }),
+                        h("button", { onClick: () => password === '1234' ? setIsLoggedIn(true) : alert('Senha incorreta!'), className: "w-full gold-bg text-white p-4 rounded-xl font-black" }, "Entrar")
                     )
                 );
             }
 
-            const handleServicoChange = (e) => {
-                const selected = servicosDisponiveis.find(s => s.nome === e.target.value);
-                setForm({ ...form, servico: e.target.value, valor: selected ? selected.valor : '' });
+            const registrar = (e) => {
+                e.preventDefault();
+                setHistorico([...historico, { ...form, id: Date.now() }]);
+                setForm({ nome: '', data: '', valor: '', servico: '' });
+                alert('Registrado!');
             };
 
-            return h("div", { className: "min-h-screen p-4 sm:p-8 flex items-center justify-center" },
-                h("form", { onSubmit: (e) => { e.preventDefault(); alert('Registrado!'); }, className: "bg-white p-6 sm:p-12 rounded-[2rem] sm:rounded-[2.5rem] border border-zinc-100 shadow-xl w-full max-w-lg" },
-                    h("h1", { className: "text-2xl sm:text-3xl font-black italic uppercase tracking-tighter mb-6 sm:mb-8" }, "Novo ", h("span", { className: "gold-text" }, "Atendimento")),
-                    h("div", { className: "space-y-4 sm:space-y-6" },
-                        h("input", { type: "text", placeholder: "Nome da Cliente", required: true, onChange: (e) => setForm({...form, nome: e.target.value}), className: "w-full bg-zinc-50 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-zinc-200" }),
-                        h("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-4" },
-                            h("input", { type: "date", required: true, onChange: (e) => setForm({...form, data: e.target.value}), className: "w-full bg-zinc-50 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-zinc-200" }),
-                            h("input", { type: "text", value: form.valor ? 'R$ ' + form.valor.toFixed(2) : '', readOnly: true, className: "w-full bg-zinc-100 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-zinc-200 text-zinc-500" })
+            return h("div", { className: "min-h-screen p-4 max-w-lg mx-auto" },
+                h("div", { className: "flex gap-2 mb-6" },
+                    h("button", { onClick: () => setView('novo'), className: `flex-1 p-3 rounded-xl font-bold ${view === 'novo' ? 'gold-bg text-white' : 'bg-white'}` }, "Novo"),
+                    h("button", { onClick: () => setView('historico'), className: `flex-1 p-3 rounded-xl font-bold ${view === 'historico' ? 'gold-bg text-white' : 'bg-white'}` }, "Histórico")
+                ),
+                view === 'novo' ? 
+                h("form", { onSubmit: registrar, className: "bg-white p-8 rounded-[2rem] shadow-xl" },
+                    h("h1", { className: "text-2xl font-black mb-6" }, "Novo ", h("span", { className: "gold-text" }, "Atendimento")),
+                    h("div", { className: "space-y-4" },
+                        h("input", { type: "text", placeholder: "Nome", required: true, value: form.nome, onChange: (e) => setForm({...form, nome: e.target.value}), className: "w-full bg-zinc-50 p-4 rounded-xl" }),
+                        h("input", { type: "date", required: true, value: form.data, onChange: (e) => setForm({...form, data: e.target.value}), className: "w-full bg-zinc-50 p-4 rounded-xl" }),
+                        h("select", { required: true, value: form.servico, onChange: (e) => {
+                            const s = servicosDisponiveis.find(x => x.nome === e.target.value);
+                            setForm({ ...form, servico: e.target.value, valor: s ? s.valor : '' });
+                        }, className: "w-full bg-zinc-50 p-4 rounded-xl" },
+                            h("option", { value: "" }, "Serviço"),
+                            servicosDisponiveis.map(s => h("option", { key: s.nome, value: s.nome }, s.nome + " (R$ " + s.valor + ")"))
                         ),
-                        h("select", { required: true, onChange: handleServicoChange, className: "w-full bg-zinc-50 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-zinc-200" },
-                            h("option", { value: "" }, "Selecione um serviço"),
-                            servicosDisponiveis.map(s => h("option", { key: s.nome, value: s.nome }, s.nome + " (R$ " + s.valor.toFixed(2) + ")"))
-                        ),
-                        h("button", { type: "submit", className: "w-full gold-bg text-white p-3 sm:p-4 rounded-xl sm:rounded-2xl font-black uppercase tracking-widest text-xs" }, "Registrar Atendimento")
+                        h("button", { type: "submit", className: "w-full gold-bg text-white p-4 rounded-xl font-black" }, "Salvar")
                     )
+                ) :
+                h("div", { className: "bg-white p-8 rounded-[2rem] shadow-xl" },
+                    h("h1", { className: "text-2xl font-black mb-6" }, "Seu ", h("span", { className: "gold-text" }, "Histórico")),
+                    historico.length === 0 ? h("p", { className: "text-zinc-400" }, "Nenhum atendimento.") :
+                    h("div", { className: "space-y-4" }, historico.map(hItem => 
+                        h("div", { key: hItem.id, className: "p-4 bg-zinc-50 rounded-xl border" },
+                            h("p", { className: "font-bold" }, hItem.nome),
+                            h("p", { className: "text-sm text-zinc-500" }, hItem.data + " - " + hItem.servico + " - R$ " + hItem.valor)
+                        )
+                    ))
                 )
             );
         }
