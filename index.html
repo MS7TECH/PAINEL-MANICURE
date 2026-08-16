@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel da Manicure - Rivi</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background-color: #f4f4f9; }
+        .container { max-width: 400px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #333; }
+        input, button { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        button { background-color: #28a745; color: white; border: none; cursor: pointer; }
+        button:hover { background-color: #218838; }
+        #mensagem { text-align: center; margin-top: 10px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Lançar Atendimento</h2>
+    <input type="text" id="cliente" placeholder="Nome da Cliente">
+    <input type="text" id="servico" placeholder="Serviço (ex: Pé, Mão, Pé e Mão)">
+    <input type="date" id="data">
+    <input type="number" id="valor" placeholder="Valor (R$)">
+    <button onclick="salvarLancamento()">Salvar Registro</button>
+    <div id="mensagem"></div>
+</div>
+
+<script>
+    // Credenciais configuradas do Supabase
+    const supabaseUrl = 'https://rahubkowehwtvditbhlx.supabase.co';
+    const supabaseKey = 'sb_publishable_wKbs4gYVURdIR6Cafm8qFA_tUZZTIKo';
+    const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+    async function salvarLancamento() {
+        const cliente = document.getElementById('cliente').value;
+        const servico = document.getElementById('servico').value;
+        const data = document.getElementById('data').value;
+        const valor = document.getElementById('valor').value;
+        const msg = document.getElementById('mensagem');
+
+        if (!cliente || !servico || !data || !valor) {
+            msg.innerText = "Preencha todos os campos!";
+            msg.style.color = "red";
+            return;
+        }
+
+        const { error } = await supabase
+            .from('registros_manicure')
+            .insert([{ data_atendimento: data, cliente, servico, valor }]);
+
+        if (error) {
+            msg.innerText = "Erro ao salvar: " + error.message;
+            msg.style.color = "red";
+        } else {
+            msg.innerText = "Sucesso!";
+            msg.style.color = "green";
+            // Limpa campos
+            document.querySelectorAll('input').forEach(i => i.value = '');
+        }
+    }
+</script>
+
+</body>
+</html>
