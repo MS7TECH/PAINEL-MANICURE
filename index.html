@@ -4,9 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel Manicure</title>
+    <!-- React e ReactDOM -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Montserrat', sans-serif; background-color: #f8f8f8; }
@@ -18,8 +22,13 @@
     <div id="root"></div>
 
     <script>
-        const { useState } = React;
+        const { useState, useEffect } = React;
         const h = React.createElement;
+
+        // Credenciais do Supabase integradas
+        const SUPABASE_URL = 'https://rahubkowehwtvditbhlx.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_wKbs4gYVURdIR6Cafm8qFA_tUZZTIKo';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         const servicosDisponiveis = [
             { nome: 'Cutilagem', valor: 20.00 },
@@ -34,53 +43,109 @@
             const [form, setForm] = useState({ nome: '', data: '', valor: '', servico: '' });
             const [historico, setHistorico] = useState([]);
             const [view, setView] = useState('novo'); // 'novo' ou 'historico'
+            const [loading, setLoading] = useState(false);
+
+            // Carregar histórico do Supabase ao logar
+            useEffect(() => {
+                if (isLoggedIn) {
+                    carregarHistorico();
+                }
+            }, [isLoggedIn]);
+
+            const carregarHistorico = async () => {
+                const { data, error } = await supabase
+                    .from('registros_manicure')
+                    .select('*')
+                    .order('criado_em', { ascending: false });
+
+                if (error) {
+                    console.error('Erro ao carregar histórico:', error);
+                } else {
+                    setHistorico(data || []);
+                }
+            };
 
             if (!isLoggedIn) {
                 return h("div", { className: "min-h-screen flex items-center justify-center p-4" },
                     h("div", { className: "bg-white p-8 rounded-[2rem] shadow-xl w-full max-w-sm text-center" },
-                        h("img", { src: "logo.png", alt: "Logo", className: "mx-auto h-20 mb-4" }),
                         h("h1", { className: "text-2xl font-black mb-6" }, "Painel ", h("span", { className: "gold-text" }, "Manicure")),
-                        h("input", { type: "password", placeholder: "Senha", onChange: (e) => setPassword(e.target.value), className: "w-full bg-zinc-50 p-4 rounded-xl mb-4 border border-zinc-200 text-center" }),
-                        h("button", { onClick: () => password === '1234' ? setIsLoggedIn(true) : alert('Senha incorreta!'), className: "w-full gold-bg text-white p-4 rounded-xl font-black" }, "Entrar")
+                        h("input", { 
+                            type: "password", 
+                            placeholder: "Senha", 
+                            value: password,
+                            onChange: (e) => setPassword(e.target.value), 
+                            className: "w-full bg-zinc-50 p-4 rounded-xl mb-4 border border-zinc-200 text-center" 
+                        }),
+                        h("button", { 
+                            onClick: () => password === '1234' ? setIsLoggedIn(true) : alert('Senha incorreta!'), 
+                            className: "w-full gold-bg text-white p-4 rounded-xl font-black cursor-pointer" 
+                        }, "Entrar")
                     )
                 );
             }
 
-            const registrar = (e) => {
+            const registrar = async (e) => {
                 e.preventDefault();
-                setHistorico([...historico, { ...form, id: Date.now() }]);
-                setForm({ nome: '', data: '', valor: '', servico: '' });
-                alert('Registrado!');
+                setLoading(true);
+
+                // Salvando na tabela registros_manicure
+                const { data, error } = await supabase
+                    .from('registros_manicure')
+                    .insert([
+                        { 
+                            cliente: form.nome, 
+                            data_atendimento: form.data, 
+                            servico: form.servico, 
+                            valor: parseFloat(form.valor) 
+                        }
+                    ]);
+
+                setLoading(false);
+
+                if (error) {
+                    console.error('Erro ao salvar:', error);
+                    alert('Erro ao salvar no banco de dados: ' + error.message);
+                } else {
+                    alert('Registrado e salvo com sucesso!');
+                    setForm({ nome: '', data: '', valor: '', servico: '' });
+                    carregarHistorico(); // Atualiza a lista direto do banco
+                    setView('historico');
+                }
             };
 
             return h("div", { className: "min-h-screen p-4 max-w-lg mx-auto" },
                 h("div", { className: "flex gap-2 mb-6" },
-                    h("button", { onClick: () => setView('novo'), className: `flex-1 p-3 rounded-xl font-bold ${view === 'novo' ? 'gold-bg text-white' : 'bg-white'}` }, "Novo"),
-                    h("button", { onClick: () => setView('historico'), className: `flex-1 p-3 rounded-xl font-bold ${view === 'historico' ? 'gold-bg text-white' : 'bg-white'}` }, "Histórico")
+                    h("button", { onClick: () => setView('novo'), className: `flex-1 p-3 rounded-xl font-bold transition-all ${view === 'novo' ? 'gold-bg text-white' : 'bg-white shadow-sm'}` }, "Novo Atendimento"),
+                    h("button", { onClick: () => { setView('historico'); carregarHistorico(); }, className: `flex-1 p-3 rounded-xl font-bold transition-all ${view === 'historico' ? 'gold-bg text-white' : 'bg-white shadow-sm'}` }, "Histórico")
                 ),
                 view === 'novo' ? 
                 h("form", { onSubmit: registrar, className: "bg-white p-8 rounded-[2rem] shadow-xl" },
                     h("h1", { className: "text-2xl font-black mb-6" }, "Novo ", h("span", { className: "gold-text" }, "Atendimento")),
                     h("div", { className: "space-y-4" },
-                        h("input", { type: "text", placeholder: "Nome", required: true, value: form.nome, onChange: (e) => setForm({...form, nome: e.target.value}), className: "w-full bg-zinc-50 p-4 rounded-xl" }),
-                        h("input", { type: "date", required: true, value: form.data, onChange: (e) => setForm({...form, data: e.target.value}), className: "w-full bg-zinc-50 p-4 rounded-xl" }),
+                        h("input", { type: "text", placeholder: "Nome da Cliente", required: true, value: form.nome, onChange: (e) => setForm({...form, nome: e.target.value}), className: "w-full bg-zinc-50 p-4 rounded-xl border border-zinc-200" }),
+                        h("input", { type: "date", required: true, value: form.data, onChange: (e) => setForm({...form, data: e.target.value}), className: "w-full bg-zinc-50 p-4 rounded-xl border border-zinc-200" }),
                         h("select", { required: true, value: form.servico, onChange: (e) => {
                             const s = servicosDisponiveis.find(x => x.nome === e.target.value);
                             setForm({ ...form, servico: e.target.value, valor: s ? s.valor : '' });
-                        }, className: "w-full bg-zinc-50 p-4 rounded-xl" },
-                            h("option", { value: "" }, "Serviço"),
-                            servicosDisponiveis.map(s => h("option", { key: s.nome, value: s.nome }, s.nome + " (R$ " + s.valor + ")"))
+                        }, className: "w-full bg-zinc-50 p-4 rounded-xl border border-zinc-200" },
+                            h("option", { value: "" }, "Selecione o Serviço"),
+                            servicosDisponiveis.map(s => h("option", { key: s.nome, value: s.nome }, s.nome + " (R$ " + s.valor.toFixed(2) + ")"))
                         ),
-                        h("button", { type: "submit", className: "w-full gold-bg text-white p-4 rounded-xl font-black" }, "Salvar")
+                        h("button", { type: "submit", disabled: loading, className: "w-full gold-bg text-white p-4 rounded-xl font-black cursor-pointer disabled:opacity-50" }, loading ? "Salvando..." : "Salvar no Banco")
                     )
                 ) :
                 h("div", { className: "bg-white p-8 rounded-[2rem] shadow-xl" },
                     h("h1", { className: "text-2xl font-black mb-6" }, "Seu ", h("span", { className: "gold-text" }, "Histórico")),
-                    historico.length === 0 ? h("p", { className: "text-zinc-400" }, "Nenhum atendimento.") :
-                    h("div", { className: "space-y-4" }, historico.map(hItem => 
-                        h("div", { key: hItem.id, className: "p-4 bg-zinc-50 rounded-xl border" },
-                            h("p", { className: "font-bold" }, hItem.nome),
-                            h("p", { className: "text-sm text-zinc-500" }, hItem.data + " - " + hItem.servico + " - R$ " + hItem.valor)
+                    historico.length === 0 ? h("p", { className: "text-zinc-400 text-center py-6" }, "Nenhum atendimento registrado ainda.") :
+                    h("div", { className: "space-y-4 max-h-[60vh] overflow-y-auto pr-2" }, historico.map(hItem => 
+                        h("div", { key: hItem.id || hItem.criado_em, className: "p-4 bg-zinc-50 rounded-xl border border-zinc-100 flex justify-between items-center" },
+                            h("div", {},
+                                h("p", { className: "font-bold text-zinc-800" }, hItem.cliente),
+                                h("p", { className: "text-xs text-zinc-500 mt-1" }, hItem.data_atendimento + " • " + hItem.servico)
+                            ),
+                            h("div", { className: "text-right" },
+                                h("p", { className: "font-black gold-text" }, "R$ " + Number(hItem.valor).toFixed(2))
+                            )
                         )
                     ))
                 )
