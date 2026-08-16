@@ -9,7 +9,7 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Supabase JS Client -->
+    <!-- Supabase JS Client v2 -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
@@ -25,10 +25,18 @@
         const { useState, useEffect } = React;
         const h = React.createElement;
 
-        // Credenciais do Supabase integradas
+        // Inicialização segura do Supabase
         const SUPABASE_URL = 'https://rahubkowehwtvditbhlx.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_wKbs4gYVURdIR6Cafm8qFA_tUZZTIKo';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        let supabase = null;
+        try {
+            if (window.supabase && window.supabase.createClient) {
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            }
+        } catch (err) {
+            console.error("Erro ao iniciar Supabase:", err);
+        }
 
         const servicosDisponiveis = [
             { nome: 'Cutilagem', valor: 20.00 },
@@ -42,26 +50,30 @@
             const [password, setPassword] = useState('');
             const [form, setForm] = useState({ nome: '', data: '', valor: '', servico: '' });
             const [historico, setHistorico] = useState([]);
-            const [view, setView] = useState('novo'); // 'novo' ou 'historico'
+            const [view, setView] = useState('novo');
             const [loading, setLoading] = useState(false);
 
-            // Carregar histórico do Supabase ao logar
             useEffect(() => {
-                if (isLoggedIn) {
+                if (isLoggedIn && supabase) {
                     carregarHistorico();
                 }
             }, [isLoggedIn]);
 
             const carregarHistorico = async () => {
-                const { data, error } = await supabase
-                    .from('registros_manicure')
-                    .select('*')
-                    .order('criado_em', { ascending: false });
+                if (!supabase) return;
+                try {
+                    const { data, error } = await supabase
+                        .from('registros_manicure')
+                        .select('*')
+                        .order('criado_em', { ascending: false });
 
-                if (error) {
-                    console.error('Erro ao carregar histórico:', error);
-                } else {
-                    setHistorico(data || []);
+                    if (error) {
+                        console.error('Erro ao carregar:', error);
+                    } else {
+                        setHistorico(data || []);
+                    }
+                } catch (e) {
+                    console.error('Exceção ao carregar histórico:', e);
                 }
             };
 
@@ -86,30 +98,39 @@
 
             const registrar = async (e) => {
                 e.preventDefault();
+                if (!supabase) {
+                    alert('Erro: Supabase não inicializado.');
+                    return;
+                }
                 setLoading(true);
 
-                // Salvando na tabela registros_manicure
-                const { data, error } = await supabase
-                    .from('registros_manicure')
-                    .insert([
-                        { 
-                            cliente: form.nome, 
-                            data_atendimento: form.data, 
-                            servico: form.servico, 
-                            valor: parseFloat(form.valor) 
-                        }
-                    ]);
+                try {
+                    const { data, error } = await supabase
+                        .from('registros_manicure')
+                        .insert([
+                            { 
+                                cliente: form.nome, 
+                                data_atendimento: form.data, 
+                                servico: form.servico, 
+                                valor: parseFloat(form.valor) 
+                            }
+                        ]);
 
-                setLoading(false);
+                    setLoading(false);
 
-                if (error) {
-                    console.error('Erro ao salvar:', error);
-                    alert('Erro ao salvar no banco de dados: ' + error.message);
-                } else {
-                    alert('Registrado e salvo com sucesso!');
-                    setForm({ nome: '', data: '', valor: '', servico: '' });
-                    carregarHistorico(); // Atualiza a lista direto do banco
-                    setView('historico');
+                    if (error) {
+                        console.error('Erro ao salvar:', error);
+                        alert('Erro ao salvar: ' + error.message);
+                    } else {
+                        alert('Registrado e salvo com sucesso!');
+                        setForm({ nome: '', data: '', valor: '', servico: '' });
+                        carregarHistorico();
+                        setView('historico');
+                    }
+                } catch (err) {
+                    setLoading(false);
+                    console.error('Erro crítico ao salvar:', err);
+                    alert('Ocorreu um erro inesperado ao salvar.');
                 }
             };
 
