@@ -3,64 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel da Manicure - Rivi</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <title>Login | Painel Manicure</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        body { font-family: sans-serif; padding: 20px; background-color: #f4f4f9; }
-        .container { max-width: 400px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        h2 { text-align: center; color: #333; }
-        input, button { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
-        button { background-color: #28a745; color: white; border: none; cursor: pointer; }
-        button:hover { background-color: #218838; }
-        #mensagem { text-align: center; margin-top: 10px; font-weight: bold; }
+        body { font-family: 'Montserrat', sans-serif; background-color: #f8f8f8; }
+        .gold-bg { background: linear-gradient(135deg, #bf953f 0%, #a67c00 100%); }
+        .gold-text { color: #bf953f; }
     </style>
 </head>
-<body>
+<body class="antialiased">
+    <div id="root"></div>
 
-<div class="container">
-    <h2>Lançar Atendimento</h2>
-    <input type="text" id="cliente" placeholder="Nome da Cliente">
-    <input type="text" id="servico" placeholder="Serviço (ex: Pé, Mão, Pé e Mão)">
-    <input type="date" id="data">
-    <input type="number" id="valor" placeholder="Valor (R$)">
-    <button onclick="salvarLancamento()">Salvar Registro</button>
-    <div id="mensagem"></div>
-</div>
+    <script>
+        const { useState } = React;
+        const h = React.createElement;
 
-<script>
-    // Credenciais configuradas do Supabase
-    const supabaseUrl = 'https://rahubkowehwtvditbhlx.supabase.co';
-    const supabaseKey = 'sb_publishable_wKbs4gYVURdIR6Cafm8qFA_tUZZTIKo';
-    const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+        const servicosDisponiveis = [
+            { nome: 'Cutilagem', valor: 20.00 },
+            { nome: 'Pé', valor: 30.00 },
+            { nome: 'Pé e mão', valor: 45.00 },
+            { nome: 'Serviço simples', valor: 20.00 }
+        ];
 
-    async function salvarLancamento() {
-        const cliente = document.getElementById('cliente').value;
-        const servico = document.getElementById('servico').value;
-        const data = document.getElementById('data').value;
-        const valor = document.getElementById('valor').value;
-        const msg = document.getElementById('mensagem');
+        function App() {
+            const [isLoggedIn, setIsLoggedIn] = useState(false);
+            const [password, setPassword] = useState('');
+            const [form, setForm] = useState({ nome: '', data: '', valor: '', servico: '' });
 
-        if (!cliente || !servico || !data || !valor) {
-            msg.innerText = "Preencha todos os campos!";
-            msg.style.color = "red";
-            return;
+            if (!isLoggedIn) {
+                return h("div", { className: "min-h-screen flex items-center justify-center p-4 sm:p-8" },
+                    h("div", { className: "bg-white p-6 sm:p-12 rounded-[2rem] sm:rounded-[2.5rem] shadow-xl w-full max-w-sm text-center" },
+                        h("img", { src: "logo.png", alt: "Logo", className: "mx-auto h-20 mb-4" }),
+                        h("h1", { className: "text-xl sm:text-2xl font-black mb-6 sm:mb-8" }, "Painel ", h("span", { className: "gold-text" }, "Manicure")),
+                        h("input", { type: "password", placeholder: "Senha (1234)", onChange: (e) => setPassword(e.target.value), className: "w-full bg-zinc-50 p-3 sm:p-4 rounded-xl sm:rounded-2xl mb-4 border border-zinc-200 text-center tracking-widest" }),
+                        h("button", { onClick: () => password === '1234' ? setIsLoggedIn(true) : alert('Senha incorreta!'), className: "w-full gold-bg text-white p-3 sm:p-4 rounded-xl sm:rounded-2xl font-black" }, "Entrar")
+                    )
+                );
+            }
+
+            const handleServicoChange = (e) => {
+                const selected = servicosDisponiveis.find(s => s.nome === e.target.value);
+                setForm({ ...form, servico: e.target.value, valor: selected ? selected.valor : '' });
+            };
+
+            return h("div", { className: "min-h-screen p-4 sm:p-8 flex items-center justify-center" },
+                h("form", { onSubmit: (e) => { e.preventDefault(); alert('Registrado!'); }, className: "bg-white p-6 sm:p-12 rounded-[2rem] sm:rounded-[2.5rem] border border-zinc-100 shadow-xl w-full max-w-lg" },
+                    h("h1", { className: "text-2xl sm:text-3xl font-black italic uppercase tracking-tighter mb-6 sm:mb-8" }, "Novo ", h("span", { className: "gold-text" }, "Atendimento")),
+                    h("div", { className: "space-y-4 sm:space-y-6" },
+                        h("input", { type: "text", placeholder: "Nome da Cliente", required: true, onChange: (e) => setForm({...form, nome: e.target.value}), className: "w-full bg-zinc-50 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-zinc-200" }),
+                        h("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-4" },
+                            h("input", { type: "date", required: true, onChange: (e) => setForm({...form, data: e.target.value}), className: "w-full bg-zinc-50 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-zinc-200" }),
+                            h("input", { type: "text", value: form.valor ? 'R$ ' + form.valor.toFixed(2) : '', readOnly: true, className: "w-full bg-zinc-100 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-zinc-200 text-zinc-500" })
+                        ),
+                        h("select", { required: true, onChange: handleServicoChange, className: "w-full bg-zinc-50 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-zinc-200" },
+                            h("option", { value: "" }, "Selecione um serviço"),
+                            servicosDisponiveis.map(s => h("option", { key: s.nome, value: s.nome }, s.nome + " (R$ " + s.valor.toFixed(2) + ")"))
+                        ),
+                        h("button", { type: "submit", className: "w-full gold-bg text-white p-3 sm:p-4 rounded-xl sm:rounded-2xl font-black uppercase tracking-widest text-xs" }, "Registrar Atendimento")
+                    )
+                )
+            );
         }
 
-        const { error } = await supabase
-            .from('registros_manicure')
-            .insert([{ data_atendimento: data, cliente, servico, valor }]);
-
-        if (error) {
-            msg.innerText = "Erro ao salvar: " + error.message;
-            msg.style.color = "red";
-        } else {
-            msg.innerText = "Sucesso!";
-            msg.style.color = "green";
-            // Limpa campos
-            document.querySelectorAll('input').forEach(i => i.value = '');
-        }
-    }
-</script>
-
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(h(App));
+    </script>
 </body>
 </html>
