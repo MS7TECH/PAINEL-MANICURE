@@ -92,7 +92,8 @@
 
             if (!isLoggedIn) {
                 return h("div", { className: "min-h-screen flex items-center justify-center p-4" },
-                    h("div", { className: "bg-white p-8 rounded-[2rem] shadow-xl w-full max-w-sm text-center" },
+                    h("div", { className: "bg-white p-8 rounded-[2rem] shadow-xl w-full max-w-sm text-center flex flex-col items-center" },
+                        h("img", { src: "logo.png", alt: "Logo", className: "w-24 h-24 object-contain mb-4" }),
                         h("h1", { className: "text-2xl font-black mb-6" }, "Painel ", h("span", { className: "gold-text" }, "Manicure")),
                         h("input", { 
                             type: "password", 
