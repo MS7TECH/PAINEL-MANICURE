@@ -25,18 +25,12 @@
         const { useState, useEffect } = React;
         const h = React.createElement;
 
-        // Inicialização segura do Supabase
+        // Configuração segura sem duplicar identificadores globais
         const SUPABASE_URL = 'https://rahubkowehwtvditbhlx.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_wKbs4gYVURdIR6Cafm8qFA_tUZZTIKo';
         
-        let supabase = null;
-        try {
-            if (window.supabase && window.supabase.createClient) {
-                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            }
-        } catch (err) {
-            console.error("Erro ao iniciar Supabase:", err);
-        }
+        // Usando um nome único 'dbManicure' para evitar conflitos com outras instâncias
+        const dbManicure = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
         const servicosDisponiveis = [
             { nome: 'Cutilagem', valor: 20.00 },
@@ -54,15 +48,15 @@
             const [loading, setLoading] = useState(false);
 
             useEffect(() => {
-                if (isLoggedIn && supabase) {
+                if (isLoggedIn && dbManicure) {
                     carregarHistorico();
                 }
             }, [isLoggedIn]);
 
             const carregarHistorico = async () => {
-                if (!supabase) return;
+                if (!dbManicure) return;
                 try {
-                    const { data, error } = await supabase
+                    const { data, error } = await dbManicure
                         .from('registros_manicure')
                         .select('*')
                         .order('criado_em', { ascending: false });
@@ -98,14 +92,14 @@
 
             const registrar = async (e) => {
                 e.preventDefault();
-                if (!supabase) {
-                    alert('Erro: Supabase não inicializado.');
+                if (!dbManicure) {
+                    alert('Erro: Conexão com banco não inicializada.');
                     return;
                 }
                 setLoading(true);
 
                 try {
-                    const { data, error } = await supabase
+                    const { data, error } = await dbManicure
                         .from('registros_manicure')
                         .insert([
                             { 
