@@ -25,11 +25,9 @@
         const { useState, useEffect } = React;
         const h = React.createElement;
 
-        // Configuração segura sem duplicar identificadores globais
+        // Configuração segura do Supabase
         const SUPABASE_URL = 'https://rahubkowehwtvditbhlx.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_wKbs4gYVURdIR6Cafm8qFA_tUZZTIKo';
-        
-        // Usando um nome único 'dbManicure' para evitar conflitos com outras instâncias
         const dbManicure = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
         const servicosDisponiveis = [
@@ -68,6 +66,27 @@
                     }
                 } catch (e) {
                     console.error('Exceção ao carregar histórico:', e);
+                }
+            };
+
+            const excluirRegistro = async (id) => {
+                if (!confirm('Deseja realmente excluir este atendimento?')) return;
+
+                try {
+                    const { error } = await dbManicure
+                        .from('registros_manicure')
+                        .delete()
+                        .eq('id', id);
+
+                    if (error) {
+                        alert('Erro ao excluir: ' + error.message);
+                    } else {
+                        alert('Registro excluído com sucesso!');
+                        carregarHistorico();
+                    }
+                } catch (err) {
+                    console.error('Erro ao excluir:', err);
+                    alert('Erro inesperado ao excluir.');
                 }
             };
 
@@ -158,8 +177,13 @@
                                 h("p", { className: "font-bold text-zinc-800" }, hItem.cliente),
                                 h("p", { className: "text-xs text-zinc-500 mt-1" }, hItem.data_atendimento + " • " + hItem.servico)
                             ),
-                            h("div", { className: "text-right" },
-                                h("p", { className: "font-black gold-text" }, "R$ " + Number(hItem.valor).toFixed(2))
+                            h("div", { className: "flex items-center gap-4" },
+                                h("p", { className: "font-black gold-text" }, "R$ " + Number(hItem.valor).toFixed(2)),
+                                h("button", { 
+                                    onClick: () => excluirRegistro(hItem.id),
+                                    className: "text-red-400 hover:text-red-600 font-bold text-xs p-2 rounded-lg hover:bg-red-50 transition-all cursor-pointer",
+                                    title: "Excluir registro"
+                                }, "✕")
                             )
                         )
                     ))
